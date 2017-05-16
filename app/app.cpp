@@ -1,12 +1,14 @@
-#include "drs.hpp"
+#include "../include/drs.hpp"
 
-#include "drs_node_cpp.hpp"
+#include "node_drs.hpp"
 
 int main()
 {
-    Node *root_native = new Node(0);
-    root_native->left_ = new Node(1);
-    root_native->right_ = new Node(2);
-
     auto root_drs = DRS::Allocate<Node>();
+    auto left_native = new Node;
+    auto left_drs = DRS::Share(left_native);
+    auto right_drs = DRS::Allocate<Node>();
+
+    root_drs.set_field("left_", left_drs);
+    root_drs.set_field("right_", right_drs);
 }
