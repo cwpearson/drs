@@ -1,0 +1,5 @@
+type Node {
+    left_: ref Node;
+    right_: ref Node;
+    data_: int64;
+}
