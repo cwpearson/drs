@@ -1,45 +1,22 @@
 
-#include <unistd.h>
-#include <sys/fcntl.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <errno.h>
-#include <string.h>
 
 #include <cstdio>
+#include <string>
+
+#include "rs_manager.hpp"
+#include "rs_node.hpp"
 
 const char *PATH = "foo";
-const size_t SIZE = 4096;
+const size_t SIZE = 128;
 
 int main()
 {
-    int fd;
-    fd = open(PATH, O_RDWR);
-    if (fd == -1 && errno == ENOENT) // file does not exist. create
+    // Get a manager for the mapped region
+    RSManager m(PATH, SIZE);
+    if (!m.is_okay())
     {
+        fprintf(stderr, "m is not okay\n");
+    }
 
-        fprintf(stderr, "creating\n");
-        fd = open(PATH, O_RDWR | O_CREAT, 0666);
-        if (fd == -1)
-        {
-            fprintf(stderr, "create failed: %s\n", strerror(errno));
-            return -1;
-        }
-        ftruncate(fd, SIZE); // resize
-    }
-    else if (fd == -1)
-    {
-        fprintf(stderr, "open failed: %s\n", strerror(errno));
-        return -1;
-    }
-    fprintf(stderr, "already exists\n");
-
-    const int pagesize = getpagesize();
-    const int offset = 0;
-    char *data = (char *)mmap((caddr_t)0, pagesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
-    if (data == (caddr_t)(-1))
-    {
-        fprintf(stderr, "mmap failed: %s\n", strerror(errno));
-        return -1;
-    }
+    auto n = m.AllocNode();
 }
