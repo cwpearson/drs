@@ -4,7 +4,6 @@ Node Node::CreateShared(RSManager &manager, double d)
 {
   // Get space from the manager
   auto start = manager.Alloc(underlying_size_);
-
   auto n = Node(&manager);
   n.realize(start);
 
@@ -17,13 +16,7 @@ Node Node::CreateShared(RSManager &manager, double d)
 Node Node::CreateShared(RSManager &manager, double d, RSRef<Node> left)
 {
   // Get space from the manager
-  auto start = manager.Alloc(underlying_size_);
-
-  auto n = Node(&manager);
-  n.realize(start);
-
-  // store the double
-  n.Set_value(d);
+  auto n = Node::CreateShared(manager, d);
 
   // Store the reference
   n.Set_left(left);
