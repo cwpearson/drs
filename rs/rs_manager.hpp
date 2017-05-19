@@ -4,17 +4,18 @@
 #include <cstdlib>
 #include <string>
 
-#include "rs_object.hpp"
-#include "rs_node.hpp"
+#include "rs_ref.hpp"
 
 class RSManager
 {
   private:
-    int fd_;     // file descriptor to mapped region
-    void *data_; // pointer to mapped region
+    int fd_;      // file descriptor to mapped region
+    char *data_;  // pointer to mapped region
+    char *free_;  // pointer to free space
+    size_t size_; // size of mapped region
 
   public:
-    RSManager() : fd_(-1), data_(nullptr) {}
+    RSManager() : fd_(-1), data_(nullptr), free_(data_), size_(0) {}
     RSManager(const std::string &path, const size_t size);
 
     bool is_okay()
@@ -22,14 +23,27 @@ class RSManager
         return (-1 != fd_ && nullptr != data_);
     }
 
-    template <typename T>
-    T CreateShared();
-
-    Node AllocNode()
+    char *Alloc(size_t nbytes)
     {
-        auto loc = reinterpret_cast<char *>(data_);
-        auto n = Node(this, loc, 5);
-        return n;
+        if (free_ - data_ < size_)
+        {
+            auto loc = free_;
+            free_ += nbytes;
+            return loc;
+        }
+        else
+        {
+            fprintf(stderr, "region:     %p - %p\n", data_, data_ + size_);
+            fprintf(stderr, "free start: %p\n", free_);
+            fprintf(stderr, "OOM\n");
+            return nullptr;
+        }
+    }
+
+    template <typename T>
+    RSRef<T> get_ref(const T &t)
+    {
+        return RSRef<T>(this, t.underlying_object_ - data_);
     }
 };
 

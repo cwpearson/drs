@@ -1,11 +1,11 @@
-#include "rs_manager.hpp"
-
 #include <unistd.h>
 #include <sys/fcntl.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <errno.h>
 #include <string.h>
+
+#include "rs_manager.hpp"
 
 int createOrOpenFile(const std::string &path, const size_t size)
 {
@@ -21,7 +21,7 @@ int createOrOpenFile(const std::string &path, const size_t size)
   return fd;
 }
 
-RSManager::RSManager(const std::string &path, const size_t size) : fd_(-1)
+RSManager::RSManager(const std::string &path, const size_t size) : fd_(-1), size_(0)
 {
   // Open file
   fd_ = createOrOpenFile(path, size);
@@ -33,10 +33,11 @@ RSManager::RSManager(const std::string &path, const size_t size) : fd_(-1)
   // mmap
   // const int pagesize = getpagesize();
   const int offset = 0;
-  data_ = mmap((caddr_t)0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, offset);
+  data_ = (char *)mmap((caddr_t)0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, offset);
   if ((intptr_t)data_ == -1)
   {
     fprintf(stderr, "mmap failed: %s\n", strerror(errno));
-    exit(EXIT_FAILURE);
   }
+  free_ = data_;
+  size_ = size;
 }

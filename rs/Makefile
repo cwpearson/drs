@@ -1,6 +1,6 @@
 
 CXXFLAGS = -Wall -Wextra -Wpedantic -Weffc++ -std=c++11
-OBJECTS=main.o rs_manager.o
+OBJECTS=rs_object.o rs_ref.o rs_manager.o rs_node.o main.o
 TARGETS=main
 
 all: main

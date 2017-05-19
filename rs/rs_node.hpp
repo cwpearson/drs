@@ -1,23 +1,37 @@
-#ifndef NODE_RS_HPP
-#define NODE_RS_HPP
+#ifndef RS_NODE_HPP
+#define RS_NODE_HPP
 
 #include "rs_object.hpp"
+#include "rs_ref.hpp"
 #include "rs_manager.hpp"
 
 class Node : public RSObject
 {
-private:
-  RSRef<Node> left_;
+  friend RSManager;
 
 private:
+  RSRef<Node> left_;
   static constexpr size_t underlying_size_ = RSRef<Node>::underlying_size_ + sizeof(double);
 
 public:
-  Node(RSManager *man, char *obj, double d) : RSObject(man, obj)
+  static Node CreateShared(RSManager &manager, double d);
+  static Node CreateShared(RSManager &manager, double d, RSRef<Node> left);
+
+  RSRef<Node> Ref() const
   {
-    std::memcpy(obj + RSRef<Node>::underlying_size_, &d, sizeof(double)); // store the double
+    return manager_->get_ref(*this);
   }
-  Node(RSManager *man, char *obj) : Node(man, obj, -3) {}
+
+  void Set_left(RSRef<Node> &r);
+  void Set_value(double d);
+
+  Node(RSManager *man) : RSObject(man) {}
+
+  void realize(char *dst)
+  {
+    underlying_object_ = dst;
+  }
+
   Node *left();
   double &value();
 };
