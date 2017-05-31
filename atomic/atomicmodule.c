@@ -26,6 +26,12 @@ atomic_add_int32(PyObject *self, PyObject *args)
         "Expecting object in argument 0 to have an __array_interface__ attribute");
       return NULL;
     }
+    PyObject *ctypes = PyObject_GetAttrString(np_array, "ctypes");
+    if (NULL == ctypes) {
+      PyErr_SetString(PyExc_AttributeError, 
+        "Expecting object in argument 0 to have a ctypes attribute");
+      return NULL;
+    }
 
     PyObject *dataStr = PyString_FromString("data");
     PyObject *tup = PyObject_GetItem(array_interface, dataStr);
@@ -49,7 +55,6 @@ atomic_add_int32(PyObject *self, PyObject *args)
     if (PyInt_CheckExact(pointer_as_int)) {
       long l = PyInt_AsLong(pointer_as_int);
       ptr = (void *) l; 
-      
     } else if (PyLong_CheckExact(pointer_as_int)) {
       ptr = PyLong_AsVoidPtr(pointer_as_int);
     } else {
