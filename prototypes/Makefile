@@ -1,5 +1,5 @@
 
-CXXFLAGS = -Wall -Wextra -Wpedantic -Weffc++ -std=c++11
+CXXFLAGS = -Wall -Wextra -Wpedantic -Weffc++ -std=c++11 -O2
 OBJECTS=vecadd.o
 TARGETS=vecadd
 

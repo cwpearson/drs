@@ -62,14 +62,15 @@ class DrsVectorDouble {
 };
 
 int main(void) {
+  const size_t M = 1024 * 1024;
   const size_t G = 1024 * 1024 * 1024;
-  auto region = mapFile("foo", G);
+  auto region = mapFile("foo", M);
   if (nullptr == region) {
     fprintf(stderr, "No luck\n");
     return EXIT_FAILURE;
   }
 
-  DrsVectorDouble v(region, 0, G / sizeof(double));
+  DrsVectorDouble v(region, 0, M / sizeof(double));
  
   for (size_t i = 0; i < v.size(); ++i) {
     v[i] = i;
