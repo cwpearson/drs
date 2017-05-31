@@ -11,3 +11,5 @@ print a
 atomic.add_int32(a, 0, 5)
 atomic.add_int32(a, 1, 2)
 print a
+
+atomic.add_int32(0,0,0)

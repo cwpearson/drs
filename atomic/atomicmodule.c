@@ -10,7 +10,7 @@ atomic_add_int32(PyObject *self, PyObject *args)
 {
     int32_t off;
     int32_t inc;
-    PyObject *np_array;
+    PyObject *np_array = NULL;
 
     if (!PyArg_ParseTuple(args, "Oii", &np_array, &off, &inc))
         return NULL;
@@ -20,20 +20,30 @@ atomic_add_int32(PyObject *self, PyObject *args)
 
     // Get a pointer to the array data
     // see https://docs.scipy.org/doc/numpy/reference/arrays.interface.html
-
     PyObject *array_interface = PyObject_GetAttrString(np_array, "__array_interface__");
-    assert(array_interface && "Expecting object to have an __array_interface__ attribute!");
-    //fprintf(stderr, "array_interface: %p\n", array_interface);
+    if (NULL == array_interface) {
+      PyErr_SetString(PyExc_AttributeError, 
+        "Expecting object in argument 0 to have an __array_interface__ attribute");
+      return NULL;
+    }
 
-    PyObject *dataStr = Py_BuildValue("s", "data");
-    assert(dataStr);
+    PyObject *dataStr = PyString_FromString("data");
     PyObject *tup = PyObject_GetItem(array_interface, dataStr);
-    //fprintf(stderr, "tup object pointer: %p\n", tup);
-    assert(PyTuple_Check(tup) && "__array_interface__['data'] should be a tuple");
+    if (NULL == tup) {
+      PyErr_SetString(PyExc_LookupError, 
+        "Argument 0 should provide __array_interface__['data']");
+      return NULL;
+    }
+    if (!PyTuple_Check(tup)) {
+      PyErr_SetString(PyExc_TypeError, "__array_interface__['data'] should be a tuple");
+      return NULL;
+    }
 
     PyObject *pointer_as_int = PyTuple_GetItem(tup, 0);
-    assert(PyInt_Check(pointer_as_int) && "0th tuple item should be an integer");
-    //fprintf(stderr, "pointer object:  %p\n", pointer);
+    if (!PyInt_Check(pointer_as_int)) {
+      PyErr_SetString(PyExc_TypeError, "0th tuple item should be an integer");
+      return NULL;
+    }
 
     atomic_int *ptr = NULL;
     if (PyInt_CheckExact(pointer_as_int)) {
