@@ -15,8 +15,8 @@ atomic_add_int32(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "Oii", &np_array, &off, &inc))
         return NULL;
 
-    fprintf(stderr, "off=%d, inc=%d\n", off, inc);
-    fprintf(stderr, "passed obj: %p\n", np_array);
+    //fprintf(stderr, "off=%d, inc=%d\n", off, inc);
+    //fprintf(stderr, "passed obj: %p\n", np_array);
 
     PyObject *ctypes = PyObject_GetAttrString(np_array, "ctypes");
     if (NULL == ctypes) {
@@ -64,11 +64,11 @@ atomic_add_int32(PyObject *self, PyObject *args)
     } else if (PyLong_CheckExact(data)) {
       ptr = PyLong_AsVoidPtr(data);
     } else {
-      assert(0 && "Unhandled.");
+      PyErr_SetString(PyExc_Exception, 
+        "Member should be an int or long");
+      return NULL;
     }
-    assert(ptr);
-    fprintf(stderr, "pointer object:  %p\n", ptr);
-    // Treat the object like a raw int and increment it
+    //fprintf(stderr, "pointer object:  %p\n", ptr);
     atomic_fetch_add_explicit(ptr + off, inc, memory_order_relaxed);    
     return Py_BuildValue("i", inc);
 }
