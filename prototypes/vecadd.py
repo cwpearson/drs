@@ -44,7 +44,6 @@ region = np.ndarray(shape=(shmem.size),
                             offset=0,
                             strides=(1),
                             order='C')
-# mm = np.memmap(shmem.fd, dtype='byte', mode='r+')
 
 VEC_EXTENT = 1024 * 1024
 
@@ -83,6 +82,7 @@ complete.set(1)
 # close the map
 
 del region
+mm.close()
 shmem.unlink()
 
 print my_work

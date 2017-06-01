@@ -84,9 +84,10 @@ class DrsVectorDouble {
 };
 
 int main(void) {
+  const std::string path("/foo");
   const size_t VEC_EXTENT = 1024 * 1024;
   const size_t REGION_BYTES = 3 * VEC_EXTENT * sizeof(double) + 3 * sizeof(int32_t);
-  auto region = create_shared_region("/foo", REGION_BYTES);
+  auto region = create_shared_region(path.c_str(), REGION_BYTES);
   if (nullptr == region) {
     fprintf(stderr, "No luck\n");
     return EXIT_FAILURE;
@@ -139,4 +140,11 @@ int main(void) {
     }
   }
   printf("...done!\n");
+
+  // Don't need this any more
+  if (-1 == shm_unlink(path.c_str())) {
+    fprintf(stderr, "shm_unlink failed: %s\n", strerror(errno));
+    return EXIT_FAILURE;
+  }
 }
+
