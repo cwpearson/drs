@@ -3,14 +3,10 @@ import numpy as np
 import atomic
 
 class DrsAtomicInt32:
-    def __init__(self, reg, off):
-        self.region = reg
-        self.offset = off
     def __init__(self, reg, off, val):
         self.region = reg
         self.offset = off
         struct.pack_into('i', self.region, self.offset, val)
-
 
     def increment(self, inc):
         idx = self.offset / 4
@@ -35,7 +31,7 @@ class DrsVectorDouble:
 mm = np.memmap("foo", dtype='byte', mode='r+')
 
 offset = 0
-i32 = DrsAtomicInt32(mm, 0)
+i32 = DrsAtomicInt32(mm, 0, 0)
 offset += 4
 a = DrsVectorDouble(mm, offset, 1024 * 1024)
 offset += a.capacity * 8
@@ -44,14 +40,15 @@ offset += b.capacity * 8
 c = DrsVectorDouble(mm, offset, 1024 * 1024)
 offset += c.capacity * 8
 
-print v[0]
-atomic.add_int(mm,0,2)
-print v[0]
-
-#for i in range(v.capacity):
-#    print v[i]
-#    v[i] += 1
-#    print v[i]
+BS = 10
+while True:
+    start = i32.increment(BS)
+    if start >= c.capacity:
+        break
+    print "Python @", start
+    for i in range(start, min(BS, c.capacity)):
+        c[i] = a[i] + b[i]
 
 # close the map
+print "Python done!"
 del mm
