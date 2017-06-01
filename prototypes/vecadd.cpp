@@ -61,6 +61,11 @@ class DrsAtomicInt32 {
     auto ptr = reinterpret_cast<volatile int32_t*>(region_ + offset_);
     return *ptr;
   }
+  DrsAtomicInt32 &operator=(const int32_t i) {
+    auto ptr = reinterpret_cast<volatile int32_t*>(region_ + offset_);
+    *ptr = i;
+    return *this;
+  }
 };
 
 class DrsVectorDouble {
@@ -84,21 +89,26 @@ class DrsVectorDouble {
 };
 
 int main(void) {
-  const size_t G = 1024 * 1024 * 1024;
-  auto region = mapFile("foo", G);
+  const size_t VEC_EXTENT = 1024 * 1024;
+  const size_t REGION_BYTES = 3 * VEC_EXTENT * sizeof(double) + 3 * sizeof(int32_t);
+  auto region = mapFile("foo", REGION_BYTES);
   if (nullptr == region) {
     fprintf(stderr, "No luck\n");
     return EXIT_FAILURE;
   }
 
   size_t offset = 0;
-  DrsAtomicInt32 i32(region, 0, 0);
+  DrsAtomicInt32 todo(region, offset, 0); // start of unadded region
   offset += sizeof(int32_t);
-  DrsVectorDouble a(region, offset, 1024*1024);
+  DrsAtomicInt32 complete(region, offset, 0); // is python done
+  offset += sizeof(int32_t);
+  DrsAtomicInt32 go(region, offset, 0); // python may start
+  offset += sizeof(int32_t);
+  DrsVectorDouble a(region, offset, VEC_EXTENT);
   offset += sizeof(double) * a.size();
-  DrsVectorDouble b(region, offset, 1024*1024);
+  DrsVectorDouble b(region, offset, VEC_EXTENT);
   offset += sizeof(double) * b.size();
-  DrsVectorDouble c(region, offset, 1024*1024);
+  DrsVectorDouble c(region, offset, VEC_EXTENT);
   offset += sizeof(double) * c.size();
 
 // Initialize the vectors
@@ -109,22 +119,29 @@ int main(void) {
     b[i] = i;
   }
   
-  
+  go = 1; // tell python to go
+
+  size_t my_work = 0; // how many numbers C++ added
   const int BS = 10;
   int start;
-  while ((start = i32.increment(BS)) < 1024 * 1024) {
-    fprintf(stderr, "C++ claimed %d-%d\n", start, start + BS - 1);
+  while ((start = todo.increment(BS)) < c.size()) {
+    printf("C++ claimed %d-%d\n", start, start + BS - 1);
     for (int i = start; i < start + BS && i < c.size(); ++i) {
       c[i] = a[i] + b[i];
     }
+    my_work += BS;
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
-  fprintf(stderr, "checking...\n");
+  printf("%lu\n", my_work);
+  printf("Waiting for Python to finish...\n");
+  while (!complete.fetch()) {};
+
+  printf("checking...\n");
   for (size_t i = 0; i < c.size(); ++i) {
     if (c[i] != a[i] + b[i]) {
-      fprintf(stderr, "%lu: %f != %f + %f\n", i, c[i], a[i], b[i]);
+      printf("%lu: %f != %f + %f\n", i, c[i], a[i], b[i]);
     }
   }
-  fprintf(stderr, "...done!\n");
+  printf("...done!\n");
 }
