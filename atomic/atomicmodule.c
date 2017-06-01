@@ -1,8 +1,8 @@
 #include <Python.h>
 
 #include <stdint.h>
-#include <stdatomic.h>
 #include <assert.h>
+
 // The function that will be called for atomic.add_int()
 // should take a numpy array, and offset, and an increment
 static PyObject *
@@ -57,10 +57,10 @@ atomic_add_int32(PyObject *self, PyObject *args)
     //   return NULL;
     // }
 
-    atomic_int *ptr = NULL;
+    volatile int32_t *ptr = NULL;
     if (PyInt_CheckExact(data)) {
       long l = PyInt_AsLong(data);
-      ptr = (void *) l; 
+      ptr = (volatile int32_t *) l; 
     } else if (PyLong_CheckExact(data)) {
       ptr = PyLong_AsVoidPtr(data);
     } else {
@@ -69,8 +69,8 @@ atomic_add_int32(PyObject *self, PyObject *args)
       return NULL;
     }
     //fprintf(stderr, "pointer object:  %p\n", ptr);
-    atomic_fetch_add_explicit(ptr + off, inc, memory_order_relaxed);    
-    return Py_BuildValue("i", inc);
+    int32_t old = __sync_fetch_and_add(ptr + off, inc);    
+    return Py_BuildValue("i", old);
 }
 
 static PyMethodDef AtomicMethods[] = {
