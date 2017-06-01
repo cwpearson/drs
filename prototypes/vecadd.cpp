@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <sys/stat.h>
 #include <sys/fcntl.h>
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -9,39 +10,33 @@
 #include <chrono>
 #include <thread>
 
-int createOrResizeFile(const std::string &path, const size_t size) {
-  int fd = open(path.c_str(), O_RDWR);
-  if (fd == -1 && errno == ENOENT) // file does not exist. create
-  {
-    fd = open(path.c_str(), O_RDWR | O_CREAT, 0666);
-    if (fd != -1)
-    {
-      ftruncate(fd, size); // resize
-    }
-  }
-  return fd;
-}
 
-char *mapFile(const std::string &path, const size_t size) {
-
-  // Open file
-  int fd = createOrResizeFile(path, size);
-  if (-1 == fd)
+char *create_shared_region(const std::string &path, const size_t size) {
+  int permission = O_RDWR | O_CREAT;
+  // int mode = S_IRUSR | S_IWUSR;
+  int mode = 0666;
+  int fd = shm_open(path.c_str(), permission, mode);
+  if (fd == -1)
   {
-    fprintf(stderr, "create/resize failed: %s\n", strerror(errno));
+    fprintf(stderr, "shm_open failed: %d %s\n", errno, strerror(errno));
     return nullptr;
   }
 
-  // mmap
-  // const int pagesize = getpagesize();
-  const int offset = 0;
-  char *data = (char *)mmap((caddr_t)0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
-  if ((intptr_t)data == -1)
-  {
+  // Resize
+  if (-1 == ftruncate(fd, size)) {
+    fprintf(stderr, "ftruncate failed: %s\n", strerror(errno));
+    return nullptr;
+  }
+
+  // mmap the region
+  const int protection = PROT_READ | PROT_WRITE;
+  const int visibility = MAP_SHARED;
+  void *ptr = mmap(NULL /*addr*/, size, protection, visibility, fd, 0 /*offset*/ );
+  if (MAP_FAILED == ptr) {
     fprintf(stderr, "mmap failed: %s\n", strerror(errno));
     return nullptr;
   }
-  return data;
+  return (char *) ptr;
 }
 
 class DrsAtomicInt32 {
@@ -91,7 +86,7 @@ class DrsVectorDouble {
 int main(void) {
   const size_t VEC_EXTENT = 1024 * 1024;
   const size_t REGION_BYTES = 3 * VEC_EXTENT * sizeof(double) + 3 * sizeof(int32_t);
-  auto region = mapFile("foo", REGION_BYTES);
+  auto region = create_shared_region("/foo", REGION_BYTES);
   if (nullptr == region) {
     fprintf(stderr, "No luck\n");
     return EXIT_FAILURE;
@@ -125,7 +120,7 @@ int main(void) {
   const int BS = 10;
   int start;
   while ((start = todo.increment(BS)) < c.size()) {
-    // printf("C++ claimed %d-%d\n", start, start + BS - 1);
+    printf("C++ claimed %d-%d\n", start, start + BS - 1);
     for (int i = start; i < start + BS && i < c.size(); ++i) {
       c[i] = a[i] + b[i];
     }
