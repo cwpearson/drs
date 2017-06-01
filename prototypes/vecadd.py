@@ -1,7 +1,9 @@
 import struct
+import mmap
 import numpy as np
 import atomic
 from time import sleep
+import posix_ipc
 
 class DrsAtomicInt32:
     def __init__(self, reg, off):
@@ -34,22 +36,30 @@ class DrsVectorDouble:
         struct.pack_into('d', self.region, off, item)
 
 # array-like memmap using numpy
-mm = np.memmap("foo", dtype='byte', mode='r+')
+shmem = posix_ipc.SharedMemory("/foo")
+mm = mmap.mmap(shmem.fd, 0)
+region = np.ndarray(shape=(shmem.size),
+                            dtype='byte',
+                            buffer=mm,
+                            offset=0,
+                            strides=(1),
+                            order='C')
+# mm = np.memmap(shmem.fd, dtype='byte', mode='r+')
 
 VEC_EXTENT = 1024 * 1024
 
 offset = 0
-todo = DrsAtomicInt32(mm, offset)
+todo = DrsAtomicInt32(region, offset)
 offset += 4
-complete = DrsAtomicInt32(mm, offset) # set when Python is done
+complete = DrsAtomicInt32(region, offset) # set when Python is done
 offset += 4
-go = DrsAtomicInt32(mm, offset) # wait for permission to start
+go = DrsAtomicInt32(region, offset) # wait for permission to start
 offset += 4
-a = DrsVectorDouble(mm, offset, VEC_EXTENT)
+a = DrsVectorDouble(region, offset, VEC_EXTENT)
 offset += a.capacity * 8
-b = DrsVectorDouble(mm, offset, VEC_EXTENT)
+b = DrsVectorDouble(region, offset, VEC_EXTENT)
 offset += b.capacity * 8
-c = DrsVectorDouble(mm, offset, VEC_EXTENT)
+c = DrsVectorDouble(region, offset, VEC_EXTENT)
 offset += c.capacity * 8
 
 print "waiting...."
@@ -71,6 +81,8 @@ while True:
 
 complete.set(1)
 # close the map
-del mm
+
+del region
+shmem.unlink()
 
 print my_work
