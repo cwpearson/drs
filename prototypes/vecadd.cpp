@@ -109,14 +109,15 @@ int main(void) {
     b[i] = i;
   }
   
+  
   const int BS = 10;
   int start;
   while ((start = i32.increment(BS)) < 1024 * 1024) {
-    fprintf(stderr, "C++ starting @ %d\n", start);
+    fprintf(stderr, "C++ claimed %d-%d\n", start, start + BS - 1);
     for (int i = start; i < start + BS && i < c.size(); ++i) {
       c[i] = a[i] + b[i];
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
   fprintf(stderr, "checking...\n");
@@ -125,5 +126,5 @@ int main(void) {
       fprintf(stderr, "%lu: %f != %f + %f\n", i, c[i], a[i], b[i]);
     }
   }
-  
+  fprintf(stderr, "...done!\n");
 }

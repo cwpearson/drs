@@ -1,12 +1,12 @@
 import struct
 import numpy as np
 import atomic
+from time import sleep
 
 class DrsAtomicInt32:
-    def __init__(self, reg, off, val):
+    def __init__(self, reg, off):
         self.region = reg
         self.offset = off
-        struct.pack_into('i', self.region, self.offset, val)
 
     def increment(self, inc):
         idx = self.offset / 4
@@ -31,7 +31,7 @@ class DrsVectorDouble:
 mm = np.memmap("foo", dtype='byte', mode='r+')
 
 offset = 0
-i32 = DrsAtomicInt32(mm, 0, 0)
+i32 = DrsAtomicInt32(mm, 0)
 offset += 4
 a = DrsVectorDouble(mm, offset, 1024 * 1024)
 offset += a.capacity * 8
@@ -40,15 +40,15 @@ offset += b.capacity * 8
 c = DrsVectorDouble(mm, offset, 1024 * 1024)
 offset += c.capacity * 8
 
-BS = 10
+BS = 10000
 while True:
     start = i32.increment(BS)
     if start >= c.capacity:
         break
-    print "Python @", start
+    print "Python claimed", start, start + BS - 1
     for i in range(start, min(BS, c.capacity)):
         c[i] = a[i] + b[i]
+    sleep(0.1)
 
 # close the map
-print "Python done!"
 del mm
