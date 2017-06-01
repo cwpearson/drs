@@ -87,11 +87,11 @@ int main(void) {
   size_t offset = 0;
   DrsAtomicInt32 i32(region, 0, 0);
   offset += sizeof(int32_t);
-  DrsVectorDouble a(region, offset, 1024*1024 / sizeof(double));
+  DrsVectorDouble a(region, offset, 1024*1024);
   offset += sizeof(double) * a.size();
-  DrsVectorDouble b(region, offset, 1024*1024 / sizeof(double));
+  DrsVectorDouble b(region, offset, 1024*1024);
   offset += sizeof(double) * b.size();
-  DrsVectorDouble c(region, offset, 1024*1024 / sizeof(double));
+  DrsVectorDouble c(region, offset, 1024*1024);
   offset += sizeof(double) * c.size();
  
   for (size_t i = 0; i < a.size(); ++i) {
