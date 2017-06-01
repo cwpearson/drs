@@ -67,7 +67,7 @@ while True:
     for i in range(start, min(start + BS, c.capacity)):
         c[i] = a[i] + b[i]
     my_work += BS
-    sleep(0.05)
+    # sleep(0.05)
 
 complete.set(1)
 # close the map

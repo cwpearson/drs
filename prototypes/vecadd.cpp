@@ -125,7 +125,7 @@ int main(void) {
   const int BS = 10;
   int start;
   while ((start = todo.increment(BS)) < c.size()) {
-    printf("C++ claimed %d-%d\n", start, start + BS - 1);
+    // printf("C++ claimed %d-%d\n", start, start + BS - 1);
     for (int i = start; i < start + BS && i < c.size(); ++i) {
       c[i] = a[i] + b[i];
     }
