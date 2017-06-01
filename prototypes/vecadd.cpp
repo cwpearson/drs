@@ -41,10 +41,25 @@ char *mapFile(const std::string &path, const size_t size) {
   return data;
 }
 
-class DrsVectorDouble {
+class DrsAtomicInt32 {
  private:
   char *region_;
   size_t offset_;
+ public:
+  DrsAtomicInt32(char *reg, size_t off, int32_t val) : region_(reg), offset_(off) {
+    auto ptr = reinterpret_cast<int32_t*>(region_ + offset_);
+    *ptr = val;
+  }
+  int32_t increment(int32_t inc) {
+    int32_t *ptr = reinterpret_cast<int32_t*>(region_ + offset_);
+    return __sync_fetch_and_add(ptr, inc);
+  }
+};
+
+class DrsVectorDouble {
+ private:
+  char *region_;  // base of the mmap region
+  size_t offset_; // beginning of this object in that region
   size_t capacity_;
  public:
   DrsVectorDouble(char *region, size_t offset, size_t capacity) 
@@ -62,18 +77,28 @@ class DrsVectorDouble {
 };
 
 int main(void) {
-  const size_t M = 1024 * 1024;
   const size_t G = 1024 * 1024 * 1024;
-  auto region = mapFile("foo", M);
+  auto region = mapFile("foo", G);
   if (nullptr == region) {
     fprintf(stderr, "No luck\n");
     return EXIT_FAILURE;
   }
 
-  DrsVectorDouble v(region, 0, M / sizeof(double));
+  size_t offset = 0;
+  DrsAtomicInt32 i32(region, 0, 0);
+  offset += sizeof(int32_t);
+  DrsVectorDouble a(region, offset, 1024*1024 / sizeof(double));
+  offset += sizeof(double) * a.size();
+  DrsVectorDouble b(region, offset, 1024*1024 / sizeof(double));
+  offset += sizeof(double) * b.size();
+  DrsVectorDouble c(region, offset, 1024*1024 / sizeof(double));
+  offset += sizeof(double) * c.size();
  
-  for (size_t i = 0; i < v.size(); ++i) {
-    v[i] = i;
+  for (size_t i = 0; i < a.size(); ++i) {
+    a[i] = i;
+  }
+  for (size_t i = 0; i < b.size(); ++i) {
+    b[i] = i;
   }
   
 }
