@@ -11,3 +11,7 @@ message Hello {
     Greeting greeting = 1;
     string name = 2;
 }
+
+message AtomicInt32 {
+    int32 val = 1;
+}
